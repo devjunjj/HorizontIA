@@ -43,22 +43,47 @@ def detectar_intent_do_texto(texto, session_id):
         return "Desculpe, tive um problema para processar sua pergunta. Pode repetir?"
 
 
-# --- ROTA DO WEBHOOK (Sem alterações, mas a lógica acima a afeta) ---
-@app.route("/webhook", methods=["POST"])
+# ... (o resto do seu código, como a função detectar_intent_do_texto, fica igual) ...
+
+# SENHA SECRETA PARA O WHATSAPP (VOCÊ PODE MUDAR)
+VERIFY_TOKEN = "161410Jv!"
+
+
+# --- ROTA DO WEBHOOK (ATUALIZADA) ---
+@app.route("/webhook", methods=["GET", "POST"])
 def receber_mensagem():
-    dados = request.get_json()
+    # Lógica para a verificação inicial do WhatsApp
+    if request.method == "GET":
+        if (
+            request.args.get("hub.mode") == "subscribe"
+            and request.args.get("hub.verify_token") == VERIFY_TOKEN
+        ):
+            print("Webhook verificado com sucesso!")
+            return request.args.get("hub.challenge"), 200
+        else:
+            return "Verification token mismatch", 403
 
-    texto_recebido = dados.get("mensagem", "")
-    id_cliente = dados.get("cliente", "default_user")
+    # Lógica para receber mensagens normais (POST)
+    if request.method == "POST":
+        dados = request.get_json()
 
-    resposta_da_ia = detectar_intent_do_texto(texto_recebido, id_cliente)
+        # TODO: Adaptar para extrair a mensagem do formato complexo do WhatsApp/iFood
+        # Por enquanto, vamos manter o formato simples do Postman para teste
+        texto_recebido = dados.get("mensagem", "")
+        id_cliente = dados.get("cliente", "default_user")
 
-    print("=============================================")
-    print(f"Cliente ({id_cliente}) disse: {texto_recebido}")
-    print(f"IA respondeu: {resposta_da_ia}")
-    print("=============================================")
+        resposta_da_ia = detectar_intent_do_texto(texto_recebido, id_cliente)
 
-    return jsonify({"resposta_da_ia": resposta_da_ia})
+        print("=============================================")
+        print(f"Cliente ({id_cliente}) disse: {texto_recebido}")
+        print(f"IA respondeu: {resposta_da_ia}")
+        print("=============================================")
+
+        # TODO: Enviar a resposta de volta para a API do WhatsApp
+        return jsonify({"status": "sucesso", "resposta_da_ia": resposta_da_ia})
+
+
+# ... (o if __name__ == '__main__': ... continua igual) ...
 
 
 if __name__ == "__main__":
